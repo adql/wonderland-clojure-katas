@@ -22,5 +22,10 @@
   (execute keyword message :decode))
   
 (defn decipher [cipher message]
-  "decypherme")
-
+  (let [repeated-keyword (decode message cipher)]
+    (loop [cand-len 1]
+      (if (let [cand-repetitions (for [i (range cand-len)]
+                                   (take-nth cand-len (nthrest repeated-keyword i)))]
+            (every? #(apply = %) cand-repetitions))
+        (subs repeated-keyword 0 cand-len)
+        (recur (inc cand-len))))))

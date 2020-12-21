@@ -2,11 +2,6 @@
 
 (def values [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0])
 
-(defn- validate
-  "Validates that values has 9 elements."
-  [values]
-  (= (count values) 9))
-
 ;; May be smart to replace with using subvec
 (defn- remove-at-index
   "Utility function to remove an item at index i of a collection"
@@ -47,9 +42,29 @@
                 paired-new (conj paired [pair-left pair-right])]
             (recur rest-unpaired-new paired-new)))))))
 
+(defn find-sides-and-verify
+  "Given two corner and two side pairs as vectors, and magic number,
+  determine the position of the sides (taking the position of the
+  corners as given) and tests that all sides sum up to magic
+  number. Returns the side pairs in right order as a vector"
+  [corners sides magic-number]
+  (let [corner-l (corners 0)
+        corner-r (corners 1)
+        [up left right down] (for [l (range 2)
+                                   r (range 2)]
+                               (- magic-number (corner-l l) (corner-r r)))
+        sides-should [[up down] [right left]]
+        sides-permutations (for [l [< >]
+                                 r [< >]
+                                 pl [first last]
+                                 :let [pr (get {first last last first} pl)]]
+                             [(sort l (pl sides)) (sort r (pr sides))])]
+    sides-permutations))
+
 (defn- pairs->square
   "Builds a 3x3 square with four pairs in opposite directions and center
-  in the... center."
+  in the... center. The pairs occupy the square beginning with the
+  upper left corner clockwise."
   [pairs center]
   (let [[[tl br] [tc bc] [tr bl] [mr ml]] pairs]
     [[tl tc tr]
@@ -57,17 +72,41 @@
      [bl bc br]]))
 
 (defn- corner?
-  "Test if the pair at index i can take the corner of the square.
+  "Test if the pair can be the corner of a magic square with the other pairs.
   A number at the corner must have two couples of non-opposite numbers
   to sum up to magic-number with. By design of opposite-numbers, only
   one of them (here the left one) has to be tested if the square is
   solvable."
-  [pairs i magic-number]
-  (let [search-sum (- magic-number (first (pairs i)))
-        search-nums (flatten (remove-at-index pairs i))
+  [pair pairs magic-number]
+  (let [search-sum (- magic-number (first pair))
+        search-nums (flatten pairs)
         complementaries (remove (partial = (/ search-sum 2))
                                 (map #(- search-sum %) search-nums))]
     (= 4 (count (filter #(some (partial = %) complementaries) search-nums)))))
 
+;; (defn- corner?
+;;   "Test if the pair at index i can take the corner of the square.
+;;   A number at the corner must have two couples of non-opposite numbers
+;;   to sum up to magic-number with. By design of opposite-numbers, only
+;;   one of them (here the left one) has to be tested if the square is
+;;   solvable."
+;;   [pairs i magic-number]
+;;   (let [search-sum (- magic-number (first (pairs i)))
+;;         search-nums (flatten (remove-at-index pairs i))
+;;         complementaries (remove (partial = (/ search-sum 2))
+;;                                 (map #(- search-sum %) search-nums))]
+;;     (= 4 (count (filter #(some (partial = %) complementaries) search-nums)))))
+
 (defn magic-square [values]
-  )
+  (when-let [center (center values)]
+    (let [magic-number (magic-number values)]
+      (when-let [pairs (values->pairs   ;first, find opposite pairs
+                        (remove-at-index values (.indexOf values center))
+                        (- magic-number center))]
+        (let [corners (vec (for [i (range 4) ;determine which are at the corners
+                                 :let [pair (pairs i)]
+                                 :when (corner? pair (remove-at-index pairs i) magic-number)]
+                             pair))
+              sides (vec (remove #(some (partial = %) corners) pairs))]
+          (when (= (count corners) (count sides))
+            [corners sides]))))))

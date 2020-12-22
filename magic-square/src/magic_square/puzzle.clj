@@ -59,7 +59,8 @@
                                  pl [first last]
                                  :let [pr (get {first last last first} pl)]]
                              [(sort l (pl sides)) (sort r (pr sides))])]
-    sides-permutations))
+    (some #(when (= sides-should %) sides-should)
+          sides-permutations)))
 
 (defn- pairs->square
   "Builds a 3x3 square with four pairs in opposite directions and center
@@ -84,19 +85,6 @@
                                 (map #(- search-sum %) search-nums))]
     (= 4 (count (filter #(some (partial = %) complementaries) search-nums)))))
 
-;; (defn- corner?
-;;   "Test if the pair at index i can take the corner of the square.
-;;   A number at the corner must have two couples of non-opposite numbers
-;;   to sum up to magic-number with. By design of opposite-numbers, only
-;;   one of them (here the left one) has to be tested if the square is
-;;   solvable."
-;;   [pairs i magic-number]
-;;   (let [search-sum (- magic-number (first (pairs i)))
-;;         search-nums (flatten (remove-at-index pairs i))
-;;         complementaries (remove (partial = (/ search-sum 2))
-;;                                 (map #(- search-sum %) search-nums))]
-;;     (= 4 (count (filter #(some (partial = %) complementaries) search-nums)))))
-
 (defn magic-square [values]
   (when-let [center (center values)]
     (let [magic-number (magic-number values)]
@@ -109,4 +97,5 @@
                              pair))
               sides (vec (remove #(some (partial = %) corners) pairs))]
           (when (= (count corners) (count sides))
-            [corners sides]))))))
+            (when-let [ordered-sides (find-sides-and-verify corners sides magic-number)]
+              (pairs->square (interleave corners ordered-sides) center))))))))

@@ -1,3 +1,21 @@
+;; Wonderland Clojure Katas / Magic Square
+;; =======================================
+;;
+;; This solution is based on the observation that all opposite pairs
+;; of numbers should have the same sum, and that the center must be
+;; the average value of the numbers. It works in the following steps:
+;;
+;; 1. Determine the center
+;; 2. Organize the rest into four pairs which sum up to the difference
+;;    between the magic number and the center.
+;; 3. Determine which two pairs occupy the corners.
+;; 4. Based on arbitrary ordering of the corners, "solve" the sides
+;;    algebraically and order the side-pairs in the correct way, if
+;;    any.
+;;
+;; A failure to complete any stage causes the main function to return
+;; nil.
+
 (ns magic-square.puzzle)
 
 (def values [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0])
@@ -74,12 +92,13 @@
   "Test if the pair can be the corner of a magic square with the other pairs.
   A number at the corner must have two couples of non-opposite numbers
   to sum up to magic-number with. By design of opposite-numbers, only
-  one of them (here the left one) has to be tested if the square is
+  one of them (here the first) has to be tested if the square is
   solvable."
   [pair pairs magic-number]
   (let [search-sum (- magic-number (first pair))
         search-nums (flatten pairs)
         complementaries (remove (partial = (/ search-sum 2))
+                                        ;remove self-complementary number
                                 (map #(- search-sum %) search-nums))]
     (= 4 (count (filter #(some (partial = %) complementaries) search-nums)))))
 

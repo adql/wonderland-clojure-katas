@@ -36,13 +36,11 @@
             [pair-right-index (some #(when (= pair-right %)
                                        (.indexOf rest-unpaired pair-right))
                                     rest-unpaired)]
-          (let [;; [l r] (split-with #(not= pair-right %) rest-unpaired)
-                ;; rest-unpaired-new-1 (concat l (rest r))
-                rest-unpaired-new (remove-at-index rest-unpaired pair-right-index)
+          (let [rest-unpaired-new (remove-at-index rest-unpaired pair-right-index)
                 paired-new (conj paired [pair-left pair-right])]
             (recur rest-unpaired-new paired-new)))))))
 
-(defn find-sides-and-verify
+(defn order-and-verify-sides
   "Given two corner and two side pairs as vectors, and magic number,
   determine the position of the sides (taking the position of the
   corners as given) and tests that all sides sum up to magic
@@ -53,7 +51,7 @@
         [up left right down] (for [l (range 2)
                                    r (range 2)]
                                (- magic-number (corner-l l) (corner-r r)))
-        sides-should [[up down] [right left]]
+        sides-should [[up down] [left right]]
         sides-permutations (for [l [< >]
                                  r [< >]
                                  pl [first last]
@@ -63,11 +61,11 @@
           sides-permutations)))
 
 (defn- pairs->square
-  "Builds a 3x3 square with four pairs in opposite directions and center
-  in the... center. The pairs occupy the square beginning with the
-  upper left corner clockwise."
-  [pairs center]
-  (let [[[tl br] [tc bc] [tr bl] [mr ml]] pairs]
+  "Builds a 3x3 square from corners, sides and center, ordered
+  top-left-right-bottom precedence."
+  [corners sides center]
+  (let [[[tl br] [tr bl]] corners
+        [[tc bc] [ml mr]] sides]
     [[tl tc tr]
      [ml center mr]
      [bl bc br]]))
@@ -97,5 +95,5 @@
                              pair))
               sides (vec (remove #(some (partial = %) corners) pairs))]
           (when (= (count corners) (count sides))
-            (when-let [ordered-sides (find-sides-and-verify corners sides magic-number)]
-              (pairs->square (interleave corners ordered-sides) center))))))))
+            (when-let [ordered-sides (order-and-verify-sides corners sides magic-number)]
+              (pairs->square corners ordered-sides center))))))))
